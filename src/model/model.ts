@@ -67,3 +67,11 @@ export interface CastViewerContext {
   recast: boolean;
   watched: boolean;
 }
+
+export interface Reaction {
+  type: string;
+  hash: string;
+  reactor: User;
+  timestamp: number;
+  castHash: string;
+}

@@ -20,8 +20,9 @@ model f_casts {
   mtime             DateTime @default(now()) @db.DateTime(0)
   ctime             DateTime @default(now()) @db.DateTime(0)
 
-  author        f_users @relation(name: "created_casts", fields: [author_fid], references: [fid])
-  parend_author f_users @relation(name: "replied_casts", fields: [parent_author_fid], references: [fid])
+  author        f_users       @relation(name: "created_casts", fields: [author_fid], references: [fid])
+  parend_author f_users       @relation(name: "replied_casts", fields: [parent_author_fid], references: [fid])
+  reactions     f_reactions[]
 
   f_recasts f_recasts[]
 
@@ -67,5 +68,22 @@ model f_users {
   created_casts f_casts[] @relation(name: "created_casts")
   replied_casts f_casts[] @relation(name: "replied_casts")
 
+  @@index([mtime], map: "ix_mtime")
+}
+
+model f_reactions {
+  id            BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  hash          String   @unique(map: "hash") @default("") @db.VarChar(255)
+  cast_hash     String   @default("") @db.VarChar(255)
+  fid           BigInt   @default(0) @db.UnsignedBigInt
+  reaction_type String   @default("") @db.VarChar(255)
+  timestamp     DateTime @default(dbgenerated("'0001-01-01 00:00:00'")) @db.DateTime(0)
+  mtime         DateTime @default(now()) @db.DateTime(0)
+  ctime         DateTime @default(now()) @db.DateTime(0)
+
+  f_cast f_casts @relation(fields: [cast_hash], references: [hash])
+
+  @@index([cast_hash], map: "cast_hash")
+  @@index([fid], map: "fid")
   @@index([mtime], map: "ix_mtime")
 }

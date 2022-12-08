@@ -1,10 +1,9 @@
 import dotenv from "dotenv";
-dotenv.config();
 import express, { Express, Request, Response } from "express";
-import { indexAllCasts, initJobs, stopJobs } from "./job/job";
+import { initJobs, stopJobs } from "./job/job";
+dotenv.config();
 
-// initJobs();
-indexAllCasts();
+initJobs();
 
 const app: Express = express();
 const port = process.env.PORT;

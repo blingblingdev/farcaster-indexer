@@ -64,11 +64,12 @@ CREATE TABLE `f_reactions` (
   `cast_hash` varchar (255) NOT NULL DEFAULT '' COMMENT 'cast_hash',
   `fid` bigint UNSIGNED NOT NULL DEFAULT 0 COMMENT 'fid who react',
   `reaction_type` varchar (255) NOT NULL DEFAULT '' COMMENT 'reaction_type',
+  `timestamp` datetime NOT NULL DEFAULT '0001-01-01 00:00:00' COMMENT 'timestamp',
   `mtime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'modify time',
   `ctime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create time',
   PRIMARY KEY (`id`),
   key `ix_mtime` USING btree (`mtime`),
   key `cast_hash` USING btree (`cast_hash`),
   key `fid` USING btree (`fid`),
-  unique key `hash` USING btree (`hash`),
+  unique key `hash` USING btree (`hash`)
 ) ENGINE = innodb DEFAULT CHARACTER SET = "utf8mb4" COLLATE = "utf8mb4_general_ci" COMMENT = 'Reaction Table';

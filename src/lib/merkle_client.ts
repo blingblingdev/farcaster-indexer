@@ -1,11 +1,13 @@
-import { Cast, User } from "@app/model.ts/model";
-import axios, { AxiosInstance, AxiosResponse } from "axios";
-import _ from "lodash";
+import prisma from "@app/lib/prisma_client";
+import { Cast, Reaction, User } from "@app/model/model";
+import { f_users } from "@prisma/client";
+import axios, { AxiosInstance } from "axios";
 
 const MERKLE_BASE_URL = "https://api.farcaster.xyz";
 const MERKLE_CASTS = "/v2/casts";
+const MERKLE_CAST_LIKES = "/v2/cast-likes";
 const MERKLE_USER = "/v2/user";
-
+export const MERKLE_PAGE_SIZE = 100;
 class MerkleClient {
   private merkle: AxiosInstance;
 
@@ -44,6 +46,74 @@ class MerkleClient {
     }
     return resp.data.result.user as User;
   }
+
+  getCastLikes = async (
+    castHash: string,
+    limit: number = 25,
+    cursor?: string
+  ): Promise<[Array<Reaction>, string]> => {
+    const params = { castHash, limit } as any;
+    if (cursor) {
+      params.cursor = cursor;
+    }
+    const resp = await this.merkle.get(
+      `${MERKLE_BASE_URL}${MERKLE_CAST_LIKES}`,
+      {
+        params,
+      }
+    );
+    return [resp.data.result.likes as Array<Reaction>, resp.data.next?.cursor];
+  };
+
+  getNewestFid = async () => {
+    const newestFidInDB = await prisma.f_users.findFirst({
+      select: { fid: true },
+      orderBy: { fid: "desc" },
+    });
+    let newestFid = newestFidInDB ? Number(newestFidInDB.fid) : 0;
+    let user = await merkle.getUser(newestFid + 1);
+    while (user) {
+      await this.upsertUser(user);
+      newestFid++;
+      user = await merkle.getUser(newestFid + 1);
+    }
+    return newestFid;
+  };
+
+  // upsert user
+  upsertUser = async (user: User) => {
+    const newUser = {
+      fid: BigInt(user.fid),
+      username: user.username,
+      display_name: user.displayName,
+      pfp_url: user.pfp?.url,
+      pfp_verified: user.pfp?.verified,
+      profile_bio_text: user.profile?.bio?.text,
+      follower_count: user.followerCount,
+      following_count: user.followingCount,
+    } as f_users;
+    const count = await prisma.f_users.count({
+      where: { fid: newUser.fid },
+    });
+    if (count > 0) {
+      await prisma.f_users.update({
+        data: {
+          username: newUser.username,
+          display_name: newUser.display_name,
+          pfp_url: newUser.pfp_url,
+          pfp_verified: newUser.pfp_verified,
+          profile_bio_text: newUser.profile_bio_text,
+          follower_count: newUser.follower_count,
+          following_count: newUser.following_count,
+        },
+        where: {
+          fid: newUser.fid,
+        },
+      });
+    } else {
+      await prisma.f_users.create({ data: newUser });
+    }
+  };
 }
 
 let merkle: MerkleClient;

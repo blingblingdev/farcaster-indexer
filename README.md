@@ -7,7 +7,7 @@ This is a [Farcaster](https://www.farcaster.xyz/) indexer build on [Merkle v2 AP
 1. Follow the `.env.example` to create your own `.env` file.
 2. Create tables in your MySQL database using [db.sql](https://github.com/ffy/farcaster-indexer/blob/master/db/db.sql).
 3. Generate prisma models: `npx prisma generate`.
-4. Build the project: `yarn build`
+4. Build the project: `yarn build`.
 5. Start Indexing: `yarn start`, and everything will be indexed incrementally every 30 minutes.
 
 ## Features
@@ -20,4 +20,4 @@ Here are all kinds of data can be indexed or in progress.
 |Casts|Completed|
 |Reactions|Completed|
 |Follows|In Progress|
-|Process with deleted casts|Planned|
+|Cast deletion|Planned|

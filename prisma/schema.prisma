@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model f_casts {
+  id                BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  hash              String   @unique(map: "hash") @default("") @db.VarChar(255)
+  thread_hash       String   @default("") @db.VarChar(255)
+  parent_hash       String   @default("") @db.VarChar(255)
+  parent_author_fid BigInt   @default(0) @db.UnsignedBigInt
+  author_fid        BigInt   @default(0) @db.UnsignedBigInt
+  text              String   @default("") @db.Text
+  timestamp         DateTime @default(dbgenerated("'0001-01-01 00:00:00'")) @db.DateTime(0)
+  attachments       String   @default("") @db.Text
+  mtime             DateTime @default(now()) @db.DateTime(0)
+  ctime             DateTime @default(now()) @db.DateTime(0)
+
+  author        f_users @relation(name: "created_casts", fields: [author_fid], references: [fid])
+  parend_author f_users @relation(name: "replied_casts", fields: [parent_author_fid], references: [fid])
+
+  f_recasts f_recasts[]
+
+  @@index([author_fid], map: "author_fid")
+  @@index([mtime], map: "ix_mtime")
+  @@index([parent_author_fid], map: "parent_author_fid")
+  @@index([parent_hash], map: "parent_hash")
+  @@index([thread_hash], map: "thread_hash")
+}
+
+model f_recasts {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  hash        String   @default("") @db.VarChar(255)
+  thread_hash String   @default("") @db.VarChar(255)
+  parent_hash String   @default("") @db.VarChar(255)
+  recast_hash String   @unique(map: "recast_hash") @default("") @db.VarChar(255)
+  fid         BigInt   @default(0) @db.UnsignedBigInt
+  mtime       DateTime @default(now()) @db.DateTime(0)
+  ctime       DateTime @default(now()) @db.DateTime(0)
+
+  f_cast f_casts @relation(fields: [hash], references: [hash])
+
+  @@index([fid], map: "fid")
+  @@index([hash], map: "hash")
+  @@index([mtime], map: "ix_mtime")
+  @@index([parent_hash], map: "parent_hash")
+  @@index([thread_hash], map: "thread_hash")
+}
+
+model f_users {
+  id               BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  fid              BigInt   @unique(map: "fid") @default(0) @db.UnsignedBigInt
+  username         String   @default("") @db.VarChar(127)
+  display_name     String   @default("") @db.VarChar(127)
+  pfp_url          String   @default("") @db.Text
+  pfp_verified     Boolean  @default(false)
+  profile_bio_text String   @default("") @db.Text
+  follower_count   Int      @default(0)
+  following_count  Int      @default(0)
+  mtime            DateTime @default(now()) @db.DateTime(0)
+  ctime            DateTime @default(now()) @db.DateTime(0)
+
+  created_casts f_casts[] @relation(name: "created_casts")
+  replied_casts f_casts[] @relation(name: "replied_casts")
+
+  @@index([mtime], map: "ix_mtime")
+}

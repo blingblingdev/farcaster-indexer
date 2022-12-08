@@ -20,6 +20,6 @@ Here are all kinds of data can be indexed or in progress.
 |Casts|Completed|
 |Reactions|Completed|
 |Follows|In Progress|
-|Cast deletion|Planned|
+|Cast deletion|In Progress|
 
 You are more than welcome to submit a PR or open an issue.

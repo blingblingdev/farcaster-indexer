@@ -1,6 +1,7 @@
 import merkle, { MERKLE_PAGE_SIZE } from "@app/lib/merkle_client";
 import prisma from "@app/lib/prisma_client";
 import { f_casts, f_recasts } from "@prisma/client";
+import PromisePool from "@supercharge/promise-pool/dist";
 import * as a from "async";
 import _ from "lodash";
 
@@ -10,6 +11,7 @@ const indexCast = async (fid: number) => {
     if (!user) {
       return;
     }
+    await merkle.upsertUser(user);
 
     // find the latest cast and recast in db
     const latestCastInDB = await prisma.f_casts.findFirst({
@@ -17,7 +19,7 @@ const indexCast = async (fid: number) => {
       where: { author_fid: fid },
       orderBy: { timestamp: "desc" },
     });
-    const latestCastHashInDB = latestCastInDB ? latestCastInDB.hash : "";
+    const latestCastHashInDB = latestCastInDB ? latestCastInDB?.hash : "";
 
     let [casts, cursor] = await merkle.getCasts(fid, MERKLE_PAGE_SIZE);
     if (casts.length === 0) {
@@ -97,30 +99,15 @@ const indexCast = async (fid: number) => {
   }
 };
 
-let isIndexingAllCasts = false;
-
 export const indexAllCasts = async () => {
   try {
-    if (isIndexingAllCasts) {
-      console.log("indexAllCasts is still running!");
-      return;
-    }
-    isIndexingAllCasts = true;
     const newestFid = await merkle.getNewestFid();
     const fidList = _.range(1, newestFid);
-    const taskList = fidList.map(
-      (fid) =>
-        async function (callback: Function) {
-          await indexCast(fid);
-          callback();
-        }
-    );
-    a.parallelLimit(taskList, 20, (err) => {
-      isIndexingAllCasts = false;
-      if (err) {
-        console.log(err);
-      }
-    });
+    await PromisePool.withConcurrency(10)
+      .for(fidList)
+      .process(async (fid: number) => {
+        await indexCast(fid);
+      });
   } catch (e) {
     console.log(e);
   }

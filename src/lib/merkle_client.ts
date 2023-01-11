@@ -1,13 +1,47 @@
 import prisma from "@app/lib/prisma_client";
 import { Cast, Reaction, User } from "@app/model/model";
 import { f_users } from "@prisma/client";
-import axios, { AxiosInstance } from "axios";
+import axios, { Axios, AxiosInstance, AxiosRequestConfig } from "axios";
 
 const MERKLE_BASE_URL = "https://api.farcaster.xyz";
 const MERKLE_CASTS = "/v2/casts";
 const MERKLE_CAST_LIKES = "/v2/cast-likes";
 const MERKLE_USER = "/v2/user";
 export const MERKLE_PAGE_SIZE = 100;
+
+const Performance = require("perf_hooks").performance;
+let qpsMap = new Map();
+const qpsController =
+  (QPS = 18, OFFSET = 0) =>
+  async (config: AxiosRequestConfig) => {
+    const now = Math.trunc(Performance.timeOrigin + Performance.now()); // Math.trunc(1597224439841.351)=1597224439841
+    let { count, ts } = qpsMap.get("count") || {
+      count: 1,
+      ts: now,
+    };
+
+    if ((now / 1000) >> 0 <= (ts / 1000) >> 0) {
+      if (count < QPS) {
+        count++;
+      } else {
+        ts = 1000 * Math.ceil(ts / 1000 + 1);
+        count = 1;
+      }
+    } else {
+      ts = now;
+      count = 1;
+    }
+    qpsMap.set("count", {
+      count,
+      ts,
+    });
+
+    let sleep = ts - now;
+    sleep = sleep > 0 ? sleep + OFFSET : 0;
+    await new Promise((resolve) => setTimeout(() => resolve(0), sleep));
+    return config;
+  };
+
 class MerkleClient {
   private merkle: AxiosInstance;
 
@@ -17,6 +51,7 @@ class MerkleClient {
         Authorization: `Bearer ${process.env.MERKLE_TOKEN}`,
       },
     });
+    this.merkle.interceptors.request.use(qpsController());
   }
 
   async getCasts(

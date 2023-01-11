@@ -3,6 +3,7 @@ import prisma from "@app/lib/prisma_client";
 import { f_casts, f_reactions } from "@prisma/client";
 import _ from "lodash";
 import * as a from "async";
+import PromisePool from "@supercharge/promise-pool/dist";
 
 const DB_PAGE_SIZE = 10000;
 
@@ -78,15 +79,8 @@ const indexReaction = async (castHash: string) => {
   }
 };
 
-let isIndexingAllReactions = false;
-
 export const indexAllReactions = async () => {
   try {
-    if (isIndexingAllReactions) {
-      console.log("indexAllReactions is still running!");
-      return;
-    }
-    isIndexingAllReactions = true;
     let skip = 0;
     let casts = await prisma.f_casts.findMany({
       select: { hash: true },
@@ -95,10 +89,16 @@ export const indexAllReactions = async () => {
       take: DB_PAGE_SIZE,
     });
 
-    const allCasts = new Array<string>();
-
     while (casts.length > 0) {
-      allCasts.push(...casts.map((cast) => cast.hash));
+      await PromisePool.withConcurrency(20)
+        .for(casts.map((cast) => cast.hash))
+        .process(async (castHash: string) => {
+          await indexReaction(castHash);
+        });
+      if (skip % 1000 === 0) {
+        console.log(`reaction indexing checkpoint skip: ${skip}`);
+      }
+
       skip += casts.length;
       casts = await prisma.f_casts.findMany({
         select: { hash: true },
@@ -106,19 +106,7 @@ export const indexAllReactions = async () => {
         skip,
         take: DB_PAGE_SIZE,
       });
-      console.log(allCasts.length);
     }
-    const taskList = allCasts.map((castHash) => async (callback: Function) => {
-      await indexReaction(castHash);
-      callback();
-    });
-
-    a.parallelLimit(taskList, 20, (err) => {
-      isIndexingAllReactions = false;
-      if (err) {
-        console.log(err);
-      }
-    });
   } catch (e) {
     console.log(e);
   }

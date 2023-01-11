@@ -45,6 +45,21 @@ const qpsController =
 class MerkleClient {
   private merkle: AxiosInstance;
 
+  private retryFailedRequest = async (err: any) => {
+    if (
+      err.response &&
+      err.response.status >= 400 &&
+      err.config &&
+      !err.config.__isRetryRequest
+    ) {
+      err.config.__isRetryRequest = true;
+      console.warn(`[retryFailedRequest] retrying: ${err}`);
+      err.config.headers = JSON.parse(JSON.stringify(err.config.headers));
+      return this.merkle(err.config);
+    }
+    return Promise.reject(err);
+  };
+
   constructor() {
     this.merkle = axios.create({
       headers: {
@@ -52,6 +67,7 @@ class MerkleClient {
       },
     });
     this.merkle.interceptors.request.use(qpsController());
+    this.merkle.interceptors.response.use(undefined, this.retryFailedRequest);
   }
 
   async getCasts(

@@ -133,6 +133,7 @@ class MerkleClient {
 
   // upsert user
   upsertUser = async (user: User) => {
+    console.log(`[upsertUser] upserting user: ${JSON.stringify(user)}`);
     const newUser = {
       fid: BigInt(user.fid),
       username: user.username,

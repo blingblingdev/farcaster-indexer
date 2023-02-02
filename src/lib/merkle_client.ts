@@ -7,6 +7,7 @@ const MERKLE_BASE_URL = "https://api.farcaster.xyz";
 const MERKLE_CASTS = "/v2/casts";
 const MERKLE_CAST_LIKES = "/v2/cast-likes";
 const MERKLE_USER = "/v2/user";
+const MERKLE_FOLLOWS = "/v2/follows";
 export const MERKLE_PAGE_SIZE = 100;
 
 const Performance = require("perf_hooks").performance;
@@ -62,6 +63,7 @@ class MerkleClient {
 
   constructor() {
     this.merkle = axios.create({
+      baseURL: MERKLE_BASE_URL,
       headers: {
         Authorization: `Bearer ${process.env.MERKLE_TOKEN}`,
       },
@@ -79,14 +81,14 @@ class MerkleClient {
     if (cursor) {
       params.cursor = cursor;
     }
-    const resp = await this.merkle.get(`${MERKLE_BASE_URL}${MERKLE_CASTS}`, {
+    const resp = await this.merkle.get(MERKLE_CASTS, {
       params,
     });
     return [resp.data.result.casts as Array<Cast>, resp.data.next?.cursor];
   }
 
   async getUser(fid: number): Promise<User | undefined> {
-    const resp = await this.merkle.get(`${MERKLE_BASE_URL}${MERKLE_USER}`, {
+    const resp = await this.merkle.get(MERKLE_USER, {
       params: { fid },
       validateStatus: (status: number) => {
         return status < 500;
@@ -107,13 +109,16 @@ class MerkleClient {
     if (cursor) {
       params.cursor = cursor;
     }
-    const resp = await this.merkle.get(
-      `${MERKLE_BASE_URL}${MERKLE_CAST_LIKES}`,
-      {
-        params,
-      }
-    );
+    const resp = await this.merkle.get(MERKLE_CAST_LIKES, {
+      params,
+    });
     return [resp.data.result.likes as Array<Reaction>, resp.data.next?.cursor];
+  };
+
+  followTargetFid = async (targetFid: number): Promise<boolean> => {
+    const data = { targetFid };
+    const resp = await this.merkle.put(MERKLE_FOLLOWS, data);
+    return (resp as any).data.result.success;
   };
 
   getNewestFid = async () => {
@@ -122,6 +127,7 @@ class MerkleClient {
       orderBy: { fid: "desc" },
     });
     let newestFid = newestFidInDB ? Number(newestFidInDB.fid) : 0;
+    newestFid++;
     let user = await merkle.getUser(newestFid + 1);
     while (user) {
       await this.upsertUser(user);

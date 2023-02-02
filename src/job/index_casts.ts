@@ -2,7 +2,6 @@ import merkle, { MERKLE_PAGE_SIZE } from "@app/lib/merkle_client";
 import prisma from "@app/lib/prisma_client";
 import { f_casts, f_recasts } from "@prisma/client";
 import PromisePool from "@supercharge/promise-pool/dist";
-import * as a from "async";
 import _ from "lodash";
 
 const indexCast = async (fid: number) => {
@@ -12,6 +11,7 @@ const indexCast = async (fid: number) => {
       return;
     }
     await merkle.upsertUser(user);
+    await merkle.followTargetFid(fid);
 
     // find the latest cast and recast in db
     const latestCastInDB = await prisma.f_casts.findFirst({

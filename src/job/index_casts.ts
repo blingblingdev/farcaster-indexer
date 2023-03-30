@@ -112,3 +112,23 @@ export const indexAllCasts = async () => {
     console.log(e);
   }
 };
+
+export const followAllUsers = async () => {
+  try {
+    let newestFid = 10300;
+    let user = await merkle.getUser(newestFid + 1);
+    while (user) {
+      newestFid++;
+      user = await merkle.getUser(newestFid + 1);
+    }
+    const fidList = _.range(2, newestFid);
+
+    await PromisePool.withConcurrency(10)
+      .for(fidList)
+      .process(async (fid: number) => {
+        await merkle.followTargetFid(fid);
+      });
+  } catch (e) {
+    console.log(e);
+  }
+};

@@ -10,9 +10,9 @@ const main = async () => {
   await indexAllCasts();
   console.timeEnd("casts");
 
-  console.time("reactions");
-  await indexAllReactions();
-  console.timeEnd("reactions");
+  // console.time("reactions");
+  // await indexAllReactions();
+  // console.timeEnd("reactions");
 
   console.timeEnd("total");
 };

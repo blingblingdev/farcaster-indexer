@@ -94,7 +94,7 @@ class MerkleClient {
         return status < 500;
       },
     });
-    if (resp.status === 404) {
+    if (resp.status === 404 || resp.status === 400) {
       return undefined;
     }
     return resp.data.result.user as User;

@@ -9,7 +9,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN apk add openssl1.1-compat && yarn build
+RUN apk add openssl1.1-compat && yarn build && npx prisma generate
 
 FROM --platform=linux/amd64 node:16-alpine AS runner
 WORKDIR /app

@@ -2,14 +2,14 @@ FROM --platform=linux/amd64 node:16-alpine AS deps
 # RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package.json yarn.lock prisma ./
-RUN yarn --prod
+RUN yarn --prod && npx prisma generate
 
 FROM --platform=linux/amd64 node:16-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN apk add openssl1.1-compat && yarn build && npx prisma generate
+RUN apk add openssl1.1-compat && yarn build
 
 FROM --platform=linux/amd64 node:16-alpine AS runner
 WORKDIR /app

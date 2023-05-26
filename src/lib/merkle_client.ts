@@ -3,7 +3,7 @@ import { Cast, Reaction, User } from "@app/model/model";
 import { f_users } from "@prisma/client";
 import axios, { Axios, AxiosInstance, AxiosRequestConfig } from "axios";
 
-const MERKLE_BASE_URL = "https://api.farcaster.xyz";
+const MERKLE_BASE_URL = "https://api.warpcast.com";
 const MERKLE_CASTS = "/v2/casts";
 const MERKLE_CAST_LIKES = "/v2/cast-likes";
 const MERKLE_USER = "/v2/user";
